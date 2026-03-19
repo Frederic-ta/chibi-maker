@@ -154,12 +154,15 @@ const Overlay = (() => {
     function getCoords(e) {
       const src = e.touches ? e.touches[0] : e;
       if (!src) return null;
-      const pt = svg.createSVGPoint();
-      pt.x = src.clientX;
-      pt.y = src.clientY;
-      const ctm = svg.getScreenCTM();
-      if (!ctm) return null;
-      return pt.matrixTransform(ctm.inverse());
+      // Use getBoundingClientRect for reliable mobile coords
+      const rect = svg.getBoundingClientRect();
+      const viewBox = svg.viewBox.baseVal;
+      const scaleX = viewBox.width / rect.width;
+      const scaleY = viewBox.height / rect.height;
+      return {
+        x: (src.clientX - rect.left) * scaleX + viewBox.x,
+        y: (src.clientY - rect.top) * scaleY + viewBox.y,
+      };
     }
 
     function findItemAt(svgPt) {

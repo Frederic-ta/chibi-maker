@@ -7,15 +7,15 @@
 const PARTS = {
   // ─── CATEGORIES ─────────────────────────────────────
   categories: [
-    { id: 'body',      label: 'Corps',      icon: '👤' },
-    { id: 'head',      label: 'Tête',       icon: '🟡' },
-    { id: 'eyes',      label: 'Yeux',       icon: '👀' },
-    { id: 'mouth',     label: 'Bouche',     icon: '👄' },
-    { id: 'hairBack',  label: 'Cheveux ▼',  icon: '💇' },
-    { id: 'hairFront', label: 'Cheveux ▲',  icon: '✂️' },
-    { id: 'clothes',   label: 'Vêtements',  icon: '👕' },
-    { id: 'hat',       label: 'Chapeau',    icon: '🎩' },
-    { id: 'glasses',   label: 'Lunettes',   icon: '👓' },
+    { id: 'body',      label: 'Corps' },
+    { id: 'head',      label: 'Tête' },
+    { id: 'eyes',      label: 'Yeux' },
+    { id: 'mouth',     label: 'Bouche' },
+    { id: 'hairBack',  label: 'Cheveux ▼' },
+    { id: 'hairFront', label: 'Cheveux ▲' },
+    { id: 'clothes',   label: 'Vêtements' },
+    { id: 'hat',       label: 'Chapeau' },
+    { id: 'glasses',   label: 'Lunettes' },
   ],
 
   // ─── BODIES ─────────────────────────────────────────

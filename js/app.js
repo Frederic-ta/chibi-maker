@@ -55,7 +55,7 @@ const App = (() => {
       const btn = document.createElement('button');
       btn.className = 'cat-btn';
       btn.dataset.cat = cat.id;
-      btn.innerHTML = `<span class="cat-icon">${cat.icon}</span><span>${cat.label}</span>`;
+      btn.innerHTML = `<span>${cat.label}</span>`;
       btn.addEventListener('click', () => selectCategory(cat.id));
       bar.appendChild(btn);
     }

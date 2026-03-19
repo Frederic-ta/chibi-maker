@@ -73,7 +73,7 @@ header h1 {
   width: 100%;
   max-width: 300px;
   aspect-ratio: 2/3;
-  background: var(--bg-light);
+  background: #ffffff;
   border-radius: var(--radius);
   border: 1.5px solid var(--surface);
   display: flex;

@@ -153,10 +153,13 @@ const Overlay = (() => {
 
     function getCoords(e) {
       const src = e.touches ? e.touches[0] : e;
+      if (!src) return null;
       const pt = svg.createSVGPoint();
       pt.x = src.clientX;
       pt.y = src.clientY;
-      return pt.matrixTransform(svg.getScreenCTM().inverse());
+      const ctm = svg.getScreenCTM();
+      if (!ctm) return null;
+      return pt.matrixTransform(ctm.inverse());
     }
 
     function findItemAt(svgPt) {
@@ -202,6 +205,7 @@ const Overlay = (() => {
       }
 
       const svgPt = getCoords(e);
+      if (!svgPt) return;
       const item = findItemAt(svgPt);
 
       if (item) {
@@ -227,6 +231,7 @@ const Overlay = (() => {
       if (!dragState) return;
       e.preventDefault();
       const svgPt = getCoords(e);
+      if (!svgPt) return;
       const item = items.find(i => i.id === dragState.itemId);
       if (item) {
         item.x = Math.max(5, Math.min(195, svgPt.x - dragState.offsetX));

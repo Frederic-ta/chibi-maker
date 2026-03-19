@@ -1,6 +1,6 @@
 /**
  * app.js — Main application logic, UI routing, event handling.
- * Supports chibi parts, decorations (Déco), text (Texte), and 53mm canvas size.
+ * Supports chibi parts, decorations (Deco), text (Texte), and 53mm canvas size.
  */
 
 const App = (() => {
@@ -23,7 +23,7 @@ const App = (() => {
   // Extended categories (chibi parts + special)
   const ALL_CATEGORIES = [
     ...PARTS.categories,
-    { id: 'deco', label: 'Déco', special: true },
+    { id: 'deco', label: 'Deco', special: true },
     { id: 'texte', label: 'Texte', special: true },
   ];
 
@@ -52,7 +52,6 @@ const App = (() => {
     Overlay.initDrag(svg, () => {
       render();
       persistCurrent();
-      // If a text item is selected and we're in texte mode, populate panel
       syncTextPanel();
     });
 
@@ -88,7 +87,7 @@ const App = (() => {
       const btn = document.createElement('button');
       btn.className = 'cat-btn' + (cat.special ? ' cat-special' : '');
       btn.dataset.cat = cat.id;
-      btn.innerHTML = `<span>${cat.label}</span>`;
+      btn.textContent = cat.label;
       btn.addEventListener('click', () => selectCategory(cat.id));
       bar.appendChild(btn);
     }
@@ -101,6 +100,12 @@ const App = (() => {
     document.querySelectorAll('.cat-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.cat === catId);
     });
+
+    // Scroll active button into view
+    const activeBtn = document.querySelector(`.cat-btn[data-cat="${catId}"]`);
+    if (activeBtn) {
+      activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
 
     const carousel = document.getElementById('options-carousel');
     const textPanel = document.getElementById('text-panel');
@@ -167,7 +172,6 @@ const App = (() => {
         Overlay.addDecoration(deco.id);
         persistCurrent();
         render();
-        // Quick visual feedback
         item.style.transform = 'scale(0.85)';
         setTimeout(() => { item.style.transform = ''; }, 120);
       });
@@ -187,10 +191,8 @@ const App = (() => {
 
     const selected = Overlay.getSelectedItem();
     if (selected && selected.type === 'text') {
-      // Update existing text item
       Overlay.updateText(selected.id, text, font, size);
     } else {
-      // Add new text item
       Overlay.addText(text, font, size);
     }
 
@@ -224,13 +226,13 @@ const App = (() => {
     if (exportWidth === 384) {
       exportWidth = 626;
       btn.classList.add('active-53mm');
-      btn.querySelector('span').textContent = '53mm';
+      btn.textContent = '53mm';
       label.classList.remove('hidden');
       preview.classList.add('mode-53mm');
     } else {
       exportWidth = 384;
       btn.classList.remove('active-53mm');
-      btn.querySelector('span').textContent = '53mm';
+      btn.textContent = '53mm';
       label.classList.add('hidden');
       preview.classList.remove('mode-53mm');
     }
@@ -263,13 +265,12 @@ const App = (() => {
     selection.hat = Math.random() > 0.5 ? pick(PARTS.hat) : 'hat-none';
     selection.glasses = Math.random() > 0.7 ? pick(PARTS.glasses) : 'glasses-none';
 
-    // Some combos: match hair — if hairfront is none, make sure hairback is visible
+    // Some combos: match hair
     if (selection.hairFront === 'hairfront-none' && Math.random() > 0.3) {
       const backOptions = PARTS.hairBack.filter(h => h.id !== 'hairback-short');
       selection.hairBack = backOptions[Math.floor(Math.random() * backOptions.length)].id;
     }
 
-    // Don't clear overlay items on randomize — user might want to keep decorations
     persistCurrent();
     render();
 
@@ -279,7 +280,7 @@ const App = (() => {
 
     // Fun animation
     const preview = document.getElementById('chibi-preview');
-    preview.style.transform = 'scale(0.95)';
+    preview.style.transform = 'scale(0.96)';
     setTimeout(() => { preview.style.transform = ''; }, 150);
   }
 
@@ -287,9 +288,9 @@ const App = (() => {
   function saveCurrentChibi() {
     Storage.save(selection, Overlay.getItems());
     const btn = document.getElementById('btn-save');
-    const originalText = btn.querySelector('span').textContent;
-    btn.querySelector('span').textContent = 'Sauvegardé !';
-    setTimeout(() => { btn.querySelector('span').textContent = originalText; }, 1000);
+    const originalText = btn.textContent;
+    btn.textContent = 'Sauvegarde !';
+    setTimeout(() => { btn.textContent = originalText; }, 1000);
   }
 
   function showLoadModal() {
@@ -297,20 +298,18 @@ const App = (() => {
     const body = document.getElementById('modal-body');
 
     if (saves.length === 0) {
-      body.innerHTML = '<div class="empty-state">Aucun chibi sauvegardé</div>';
+      body.innerHTML = '<div class="empty-state">Aucun chibi sauvegarde</div>';
     } else {
       body.innerHTML = '';
       for (const entry of saves) {
         const div = document.createElement('div');
         div.className = 'saved-chibi';
 
-        // Render preview SVG (chibi only, no overlay for thumbnails)
         div.innerHTML = Renderer.toSVGString(entry.selection);
 
-        // Delete button
         const delBtn = document.createElement('button');
         delBtn.className = 'delete-btn';
-        delBtn.textContent = '×';
+        delBtn.textContent = '\u00d7';
         delBtn.addEventListener('click', (e) => {
           e.stopPropagation();
           Storage.deleteSave(entry.id);
@@ -318,7 +317,6 @@ const App = (() => {
         });
         div.appendChild(delBtn);
 
-        // Load on click
         div.addEventListener('click', () => {
           selection = { ...entry.selection };
           Overlay.setItems(entry.overlayItems || []);

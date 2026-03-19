@@ -1,5 +1,6 @@
 /**
  * storage.js — localStorage for saving/loading favorite chibis.
+ * Now includes overlay items (decorations + text) alongside part selection.
  */
 
 const Storage = (() => {
@@ -14,11 +15,12 @@ const Storage = (() => {
     }
   }
 
-  function save(selection) {
+  function save(selection, overlayItems) {
     const saves = getSaves();
     const entry = {
       id: Date.now(),
       selection: { ...selection },
+      overlayItems: overlayItems ? overlayItems.map(i => ({ ...i })) : [],
       date: new Date().toISOString(),
     };
     saves.unshift(entry);
@@ -33,13 +35,21 @@ const Storage = (() => {
     localStorage.setItem(KEY, JSON.stringify(saves));
   }
 
-  function saveCurrent(selection) {
-    localStorage.setItem(CURRENT_KEY, JSON.stringify(selection));
+  function saveCurrent(selection, overlayItems) {
+    localStorage.setItem(CURRENT_KEY, JSON.stringify({
+      selection,
+      overlayItems: overlayItems || [],
+    }));
   }
 
   function loadCurrent() {
     try {
-      return JSON.parse(localStorage.getItem(CURRENT_KEY));
+      const data = JSON.parse(localStorage.getItem(CURRENT_KEY));
+      if (!data) return null;
+      // Support old format (just selection object)
+      if (data.selection) return data;
+      // Old format: data IS the selection
+      return { selection: data, overlayItems: [] };
     } catch {
       return null;
     }

@@ -22,8 +22,9 @@ const Renderer = (() => {
   /**
    * Render the full chibi from a selection state object.
    * @param {Object} selection - { body: 'body-small', head: 'head-round', ... }
+   * @param {string} overlayContent - Optional SVG content for decorations/text overlay
    */
-  function render(selection) {
+  function render(selection, overlayContent) {
     const svg = svgEl();
     if (!svg) return;
 
@@ -50,13 +51,18 @@ const Renderer = (() => {
       content += svgMarkup;
     }
 
+    // Append overlay (decorations, text, handles) on top of chibi layers
+    if (overlayContent) {
+      content += overlayContent;
+    }
+
     svg.innerHTML = content;
   }
 
   /**
-   * Generate standalone SVG string for export/save.
+   * Generate chibi-only SVG content string (no wrapping <svg> tag).
    */
-  function toSVGString(selection) {
+  function chibiContent(selection) {
     const headPart = PARTS.head.find(h => h.id === selection.head);
     const anchors = headPart ? headPart.anchors : PARTS.head[0].anchors;
 
@@ -71,7 +77,19 @@ const Renderer = (() => {
       const needsAnchors = ['eyes', 'mouth', 'hat', 'glasses'].includes(layer);
       content += needsAnchors ? part.svg(anchors) : part.svg();
     }
+    return content;
+  }
 
+  /**
+   * Generate standalone SVG string for export/save.
+   * @param {Object} selection
+   * @param {string} overlayContent - Optional overlay SVG content (decos/text, no handles)
+   */
+  function toSVGString(selection, overlayContent) {
+    let content = chibiContent(selection);
+    if (overlayContent) {
+      content += overlayContent;
+    }
     return `<svg viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg">${content}</svg>`;
   }
 
@@ -110,7 +128,16 @@ const Renderer = (() => {
     return `<svg viewBox="${viewBox}" xmlns="http://www.w3.org/2000/svg">${svgContent}</svg>`;
   }
 
-  return { render, toSVGString, renderThumbnail };
+  /**
+   * Generate a decoration thumbnail for the carousel.
+   */
+  function renderDecoThumbnail(decoId) {
+    const deco = DECORATIONS.find(d => d.id === decoId);
+    if (!deco) return '';
+    return `<svg viewBox="-20 -20 40 40" xmlns="http://www.w3.org/2000/svg">${deco.svg}</svg>`;
+  }
+
+  return { render, toSVGString, renderThumbnail, renderDecoThumbnail };
 })();
 
 window.Renderer = Renderer;

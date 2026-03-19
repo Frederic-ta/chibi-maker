@@ -1,5 +1,6 @@
 /**
  * app.js — Main application logic, UI routing, event handling.
+ * Supports chibi parts, decorations (Déco), text (Texte), and 53mm canvas size.
  */
 
 const App = (() => {
@@ -17,17 +18,28 @@ const App = (() => {
   };
 
   let activeCategory = 'body';
+  let exportWidth = 384; // default; 626 for 53mm mode
+
+  // Extended categories (chibi parts + special)
+  const ALL_CATEGORIES = [
+    ...PARTS.categories,
+    { id: 'deco', label: 'Déco', special: true },
+    { id: 'texte', label: 'Texte', special: true },
+  ];
 
   // ─── INIT ───────────────────────────────────────────
   function init() {
     // Try to restore last session
     const saved = Storage.loadCurrent();
     if (saved) {
-      // Validate saved selection still has valid IDs
+      const s = saved.selection;
       for (const key of Object.keys(selection)) {
-        if (saved[key] && PARTS[key] && PARTS[key].find(p => p.id === saved[key])) {
-          selection[key] = saved[key];
+        if (s[key] && PARTS[key] && PARTS[key].find(p => p.id === s[key])) {
+          selection[key] = s[key];
         }
+      }
+      if (saved.overlayItems) {
+        Overlay.setItems(saved.overlayItems);
       }
     }
 
@@ -35,14 +47,35 @@ const App = (() => {
     selectCategory('body');
     render();
 
+    // Init drag system on SVG
+    const svg = document.getElementById('chibi-svg');
+    Overlay.initDrag(svg, () => {
+      render();
+      persistCurrent();
+      // If a text item is selected and we're in texte mode, populate panel
+      syncTextPanel();
+    });
+
     // Button handlers
     document.getElementById('btn-random').addEventListener('click', randomize);
-    document.getElementById('btn-export').addEventListener('click', () => Exporter.exportPNG(selection));
+    document.getElementById('btn-export').addEventListener('click', () => {
+      Exporter.exportPNG(selection, Overlay.getItems(), exportWidth);
+    });
     document.getElementById('btn-save').addEventListener('click', saveCurrentChibi);
     document.getElementById('btn-load').addEventListener('click', showLoadModal);
+    document.getElementById('btn-canvas-size').addEventListener('click', toggleCanvasSize);
     document.getElementById('modal-close').addEventListener('click', hideModal);
     document.getElementById('modal-overlay').addEventListener('click', (e) => {
       if (e.target === e.currentTarget) hideModal();
+    });
+
+    // Text panel handlers
+    document.getElementById('btn-add-text').addEventListener('click', addOrUpdateText);
+    document.getElementById('font-size').addEventListener('input', (e) => {
+      document.getElementById('font-size-val').textContent = e.target.value;
+    });
+    document.getElementById('text-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') addOrUpdateText();
     });
   }
 
@@ -51,9 +84,9 @@ const App = (() => {
     const bar = document.getElementById('category-bar');
     bar.innerHTML = '';
 
-    for (const cat of PARTS.categories) {
+    for (const cat of ALL_CATEGORIES) {
       const btn = document.createElement('button');
-      btn.className = 'cat-btn';
+      btn.className = 'cat-btn' + (cat.special ? ' cat-special' : '');
       btn.dataset.cat = cat.id;
       btn.innerHTML = `<span>${cat.label}</span>`;
       btn.addEventListener('click', () => selectCategory(cat.id));
@@ -69,7 +102,22 @@ const App = (() => {
       btn.classList.toggle('active', btn.dataset.cat === catId);
     });
 
-    buildOptionsCarousel(catId);
+    const carousel = document.getElementById('options-carousel');
+    const textPanel = document.getElementById('text-panel');
+
+    if (catId === 'deco') {
+      carousel.style.display = '';
+      textPanel.classList.add('hidden');
+      buildDecoCarousel();
+    } else if (catId === 'texte') {
+      carousel.style.display = 'none';
+      textPanel.classList.remove('hidden');
+      syncTextPanel();
+    } else {
+      carousel.style.display = '';
+      textPanel.classList.add('hidden');
+      buildOptionsCarousel(catId);
+    }
   }
 
   // ─── OPTIONS CAROUSEL ──────────────────────────────
@@ -94,9 +142,8 @@ const App = (() => {
 
       item.addEventListener('click', () => {
         selection[catId] = part.id;
-        Storage.saveCurrent(selection);
+        persistCurrent();
         render();
-        // Update active state in carousel
         carousel.querySelectorAll('.option-item').forEach(el => el.classList.remove('active'));
         item.classList.add('active');
       });
@@ -105,9 +152,99 @@ const App = (() => {
     }
   }
 
+  // ─── DECORATION CAROUSEL ───────────────────────────
+  function buildDecoCarousel() {
+    const carousel = document.getElementById('options-carousel');
+    carousel.innerHTML = '';
+
+    for (const deco of DECORATIONS) {
+      const item = document.createElement('div');
+      item.className = 'option-item deco-option';
+      item.innerHTML = Renderer.renderDecoThumbnail(deco.id);
+      item.title = deco.name;
+
+      item.addEventListener('click', () => {
+        Overlay.addDecoration(deco.id);
+        persistCurrent();
+        render();
+        // Quick visual feedback
+        item.style.transform = 'scale(0.85)';
+        setTimeout(() => { item.style.transform = ''; }, 120);
+      });
+
+      carousel.appendChild(item);
+    }
+  }
+
+  // ─── TEXT PANEL ────────────────────────────────────
+  function addOrUpdateText() {
+    const input = document.getElementById('text-input');
+    const font = document.getElementById('font-select').value;
+    const size = document.getElementById('font-size').value;
+    const text = input.value.trim();
+
+    if (!text) return;
+
+    const selected = Overlay.getSelectedItem();
+    if (selected && selected.type === 'text') {
+      // Update existing text item
+      Overlay.updateText(selected.id, text, font, size);
+    } else {
+      // Add new text item
+      Overlay.addText(text, font, size);
+    }
+
+    input.value = '';
+    persistCurrent();
+    render();
+  }
+
+  function syncTextPanel() {
+    if (activeCategory !== 'texte') return;
+    const selected = Overlay.getSelectedItem();
+    const btn = document.getElementById('btn-add-text');
+
+    if (selected && selected.type === 'text') {
+      document.getElementById('text-input').value = selected.text;
+      document.getElementById('font-select').value = selected.font;
+      document.getElementById('font-size').value = selected.fontSize;
+      document.getElementById('font-size-val').textContent = selected.fontSize;
+      btn.textContent = 'Modifier';
+    } else {
+      btn.textContent = 'Ajouter';
+    }
+  }
+
+  // ─── CANVAS SIZE ──────────────────────────────────
+  function toggleCanvasSize() {
+    const btn = document.getElementById('btn-canvas-size');
+    const label = document.getElementById('canvas-size-label');
+    const preview = document.getElementById('chibi-preview');
+
+    if (exportWidth === 384) {
+      exportWidth = 626;
+      btn.classList.add('active-53mm');
+      btn.querySelector('span').textContent = '53mm';
+      label.classList.remove('hidden');
+      preview.classList.add('mode-53mm');
+    } else {
+      exportWidth = 384;
+      btn.classList.remove('active-53mm');
+      btn.querySelector('span').textContent = '53mm';
+      label.classList.add('hidden');
+      preview.classList.remove('mode-53mm');
+    }
+  }
+
   // ─── RENDER ────────────────────────────────────────
   function render() {
-    Renderer.render(selection);
+    const overlayContent = Overlay.toSVGContent(true);
+    Renderer.render(selection, overlayContent);
+  }
+
+  // ─── PERSIST ──────────────────────────────────────
+  function persistCurrent() {
+    Storage.saveCurrent(selection, Overlay.getItems());
   }
 
   // ─── RANDOMIZE ─────────────────────────────────────
@@ -132,9 +269,13 @@ const App = (() => {
       selection.hairBack = backOptions[Math.floor(Math.random() * backOptions.length)].id;
     }
 
-    Storage.saveCurrent(selection);
+    // Don't clear overlay items on randomize — user might want to keep decorations
+    persistCurrent();
     render();
-    buildOptionsCarousel(activeCategory);
+
+    if (['body', 'head', 'eyes', 'mouth', 'hairBack', 'hairFront', 'clothes', 'hat', 'glasses'].includes(activeCategory)) {
+      buildOptionsCarousel(activeCategory);
+    }
 
     // Fun animation
     const preview = document.getElementById('chibi-preview');
@@ -144,8 +285,7 @@ const App = (() => {
 
   // ─── SAVE / LOAD ──────────────────────────────────
   function saveCurrentChibi() {
-    Storage.save(selection);
-    // Visual feedback
+    Storage.save(selection, Overlay.getItems());
     const btn = document.getElementById('btn-save');
     const originalText = btn.querySelector('span').textContent;
     btn.querySelector('span').textContent = 'Sauvegardé !';
@@ -164,7 +304,7 @@ const App = (() => {
         const div = document.createElement('div');
         div.className = 'saved-chibi';
 
-        // Render preview SVG
+        // Render preview SVG (chibi only, no overlay for thumbnails)
         div.innerHTML = Renderer.toSVGString(entry.selection);
 
         // Delete button
@@ -174,16 +314,19 @@ const App = (() => {
         delBtn.addEventListener('click', (e) => {
           e.stopPropagation();
           Storage.deleteSave(entry.id);
-          showLoadModal(); // Refresh
+          showLoadModal();
         });
         div.appendChild(delBtn);
 
         // Load on click
         div.addEventListener('click', () => {
           selection = { ...entry.selection };
-          Storage.saveCurrent(selection);
+          Overlay.setItems(entry.overlayItems || []);
+          persistCurrent();
           render();
-          buildOptionsCarousel(activeCategory);
+          if (['body', 'head', 'eyes', 'mouth', 'hairBack', 'hairFront', 'clothes', 'hat', 'glasses'].includes(activeCategory)) {
+            buildOptionsCarousel(activeCategory);
+          }
           hideModal();
         });
 

@@ -1,0 +1,343 @@
+/* === Reset & Base === */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #1a1a2e;
+  --bg-light: #16213e;
+  --surface: #0f3460;
+  --accent: #e94560;
+  --accent-hover: #ff6b81;
+  --text: #eee;
+  --text-muted: #aaa;
+  --radius: 12px;
+  --shadow: 0 2px 12px rgba(0,0,0,0.3);
+}
+
+html, body {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* === App Layout === */
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+header {
+  text-align: center;
+  padding: 8px 0 4px;
+  flex-shrink: 0;
+}
+
+header h1 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--accent);
+}
+
+/* === Preview === */
+#preview-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  min-height: 0;
+}
+
+#chibi-preview {
+  width: 100%;
+  max-width: 260px;
+  aspect-ratio: 2/3;
+  background: var(--bg-light);
+  border-radius: var(--radius);
+  border: 2px solid var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+#chibi-svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* === Category Bar === */
+#category-bar {
+  display: flex;
+  gap: 4px;
+  padding: 6px 8px;
+  overflow-x: auto;
+  flex-shrink: 0;
+  justify-content: center;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+#category-bar::-webkit-scrollbar { display: none; }
+
+.cat-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 10px;
+  border: none;
+  background: var(--bg-light);
+  color: var(--text-muted);
+  border-radius: 10px;
+  font-size: 0.6rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  min-width: 48px;
+}
+
+.cat-btn .cat-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.cat-btn.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.cat-btn:not(.active):hover {
+  background: var(--surface);
+  color: var(--text);
+}
+
+/* === Options Carousel === */
+#options-area {
+  flex-shrink: 0;
+  padding: 6px 0;
+}
+
+#options-carousel {
+  display: flex;
+  gap: 8px;
+  padding: 4px 12px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  scroll-snap-type: x mandatory;
+}
+
+#options-carousel::-webkit-scrollbar { display: none; }
+
+.option-item {
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  border-radius: 10px;
+  border: 2px solid var(--surface);
+  background: var(--bg-light);
+  cursor: pointer;
+  transition: all 0.15s;
+  scroll-snap-align: start;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.option-item svg {
+  width: 54px;
+  height: 54px;
+}
+
+.option-item.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 8px rgba(233,69,96,0.4);
+}
+
+.option-item:hover:not(.active) {
+  border-color: var(--accent-hover);
+}
+
+.option-item.none-option {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+/* === Actions Bar === */
+#actions-bar {
+  display: flex;
+  gap: 6px;
+  padding: 8px 12px 12px;
+  flex-shrink: 0;
+  justify-content: center;
+}
+
+#actions-bar button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+#actions-bar button:hover {
+  background: var(--accent);
+}
+
+#actions-bar button:active {
+  transform: scale(0.95);
+}
+
+#actions-bar button svg {
+  flex-shrink: 0;
+}
+
+/* === Modal === */
+#modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 16px;
+}
+
+#modal-overlay.hidden {
+  display: none;
+}
+
+#modal {
+  background: var(--bg-light);
+  border-radius: var(--radius);
+  width: 100%;
+  max-width: 400px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow);
+}
+
+#modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--surface);
+}
+
+#modal-header h2 {
+  font-size: 1rem;
+}
+
+#modal-close {
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 1.5rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+#modal-body {
+  padding: 12px;
+  overflow-y: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.saved-chibi {
+  width: 80px;
+  height: 120px;
+  background: var(--bg);
+  border-radius: 8px;
+  border: 2px solid var(--surface);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s;
+}
+
+.saved-chibi:hover {
+  border-color: var(--accent);
+}
+
+.saved-chibi svg {
+  width: 100%;
+  height: 100%;
+}
+
+.saved-chibi .delete-btn {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  font-size: 0.6rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.saved-chibi:hover .delete-btn {
+  opacity: 1;
+}
+
+.empty-state {
+  width: 100%;
+  text-align: center;
+  color: var(--text-muted);
+  padding: 24px;
+  font-size: 0.85rem;
+}
+
+/* === Responsive === */
+@media (min-width: 481px) {
+  #app {
+    border-left: 1px solid var(--surface);
+    border-right: 1px solid var(--surface);
+  }
+}
+
+@media (max-height: 600px) {
+  #chibi-preview {
+    max-width: 180px;
+  }
+  .option-item {
+    width: 56px;
+    height: 56px;
+  }
+}

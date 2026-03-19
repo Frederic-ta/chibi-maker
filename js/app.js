@@ -1,6 +1,6 @@
 /**
  * app.js — Main application logic, UI routing, event handling.
- * Supports chibi parts, decorations (Deco), text (Texte), and 53mm canvas size.
+ * v4: Split-screen layout with vertical tabs and options grid.
  */
 
 const App = (() => {
@@ -20,11 +20,25 @@ const App = (() => {
   let activeCategory = 'body';
   let exportWidth = 384; // default; 626 for 53mm mode
 
-  // Extended categories (chibi parts + special)
+  // Category tab labels (short for vertical tabs)
+  const TAB_LABELS = {
+    body: 'Corps',
+    head: 'Tête',
+    eyes: 'Yeux',
+    mouth: 'Bouche',
+    hairBack: 'Ch.\u25BC',
+    hairFront: 'Ch.\u25B2',
+    clothes: 'Habits',
+    hat: 'Coiffe',
+    glasses: 'Lunet.',
+    deco: 'Déco',
+    texte: 'Texte',
+  };
+
   const ALL_CATEGORIES = [
-    ...PARTS.categories,
-    { id: 'deco', label: 'Deco', special: true },
-    { id: 'texte', label: 'Texte', special: true },
+    ...PARTS.categories.map(c => c.id),
+    'deco',
+    'texte',
   ];
 
   // ─── INIT ───────────────────────────────────────────
@@ -43,7 +57,7 @@ const App = (() => {
       }
     }
 
-    buildCategoryBar();
+    buildCategoryTabs();
     selectCategory('body');
     render();
 
@@ -55,14 +69,19 @@ const App = (() => {
       syncTextPanel();
     });
 
-    // Button handlers
+    // Header buttons
     document.getElementById('btn-random').addEventListener('click', randomize);
+    document.getElementById('btn-menu').addEventListener('click', toggleMenu);
     document.getElementById('btn-export').addEventListener('click', () => {
       Exporter.exportPNG(selection, Overlay.getItems(), exportWidth);
     });
-    document.getElementById('btn-save').addEventListener('click', saveCurrentChibi);
-    document.getElementById('btn-load').addEventListener('click', showLoadModal);
-    document.getElementById('btn-canvas-size').addEventListener('click', toggleCanvasSize);
+
+    // Dropdown menu actions
+    document.getElementById('btn-save').addEventListener('click', () => { hideMenu(); saveCurrentChibi(); });
+    document.getElementById('btn-load').addEventListener('click', () => { hideMenu(); showLoadModal(); });
+    document.getElementById('btn-canvas-size').addEventListener('click', () => { toggleCanvasSize(); });
+
+    // Modal
     document.getElementById('modal-close').addEventListener('click', hideModal);
     document.getElementById('modal-overlay').addEventListener('click', (e) => {
       if (e.target === e.currentTarget) hideModal();
@@ -76,20 +95,39 @@ const App = (() => {
     document.getElementById('text-input').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') addOrUpdateText();
     });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      const menu = document.getElementById('dropdown-menu');
+      const btn = document.getElementById('btn-menu');
+      if (!menu.contains(e.target) && e.target !== btn) {
+        menu.classList.add('hidden');
+      }
+    });
   }
 
-  // ─── CATEGORY BAR ──────────────────────────────────
-  function buildCategoryBar() {
-    const bar = document.getElementById('category-bar');
-    bar.innerHTML = '';
+  // ─── DROPDOWN MENU ─────────────────────────────────
+  function toggleMenu() {
+    const menu = document.getElementById('dropdown-menu');
+    menu.classList.toggle('hidden');
+  }
 
-    for (const cat of ALL_CATEGORIES) {
+  function hideMenu() {
+    document.getElementById('dropdown-menu').classList.add('hidden');
+  }
+
+  // ─── CATEGORY TABS (vertical) ─────────────────────
+  function buildCategoryTabs() {
+    const tabs = document.getElementById('category-tabs');
+    tabs.innerHTML = '';
+
+    for (const catId of ALL_CATEGORIES) {
       const btn = document.createElement('button');
-      btn.className = 'cat-btn' + (cat.special ? ' cat-special' : '');
-      btn.dataset.cat = cat.id;
-      btn.textContent = cat.label;
-      btn.addEventListener('click', () => selectCategory(cat.id));
-      bar.appendChild(btn);
+      btn.className = 'cat-tab';
+      btn.dataset.cat = catId;
+      btn.textContent = TAB_LABELS[catId] || catId;
+      btn.addEventListener('click', () => selectCategory(catId));
+      tabs.appendChild(btn);
     }
   }
 
@@ -97,38 +135,38 @@ const App = (() => {
     activeCategory = catId;
 
     // Update active state
-    document.querySelectorAll('.cat-btn').forEach(btn => {
+    document.querySelectorAll('.cat-tab').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.cat === catId);
     });
 
-    // Scroll active button into view
-    const activeBtn = document.querySelector(`.cat-btn[data-cat="${catId}"]`);
+    // Scroll active tab into view
+    const activeBtn = document.querySelector(`.cat-tab[data-cat="${catId}"]`);
     if (activeBtn) {
-      activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
-    const carousel = document.getElementById('options-carousel');
+    const grid = document.getElementById('options-grid');
     const textPanel = document.getElementById('text-panel');
 
     if (catId === 'deco') {
-      carousel.style.display = '';
+      grid.style.display = '';
       textPanel.classList.add('hidden');
-      buildDecoCarousel();
+      buildDecoGrid();
     } else if (catId === 'texte') {
-      carousel.style.display = 'none';
+      grid.style.display = 'none';
       textPanel.classList.remove('hidden');
       syncTextPanel();
     } else {
-      carousel.style.display = '';
+      grid.style.display = '';
       textPanel.classList.add('hidden');
-      buildOptionsCarousel(catId);
+      buildOptionsGrid(catId);
     }
   }
 
-  // ─── OPTIONS CAROUSEL ──────────────────────────────
-  function buildOptionsCarousel(catId) {
-    const carousel = document.getElementById('options-carousel');
-    carousel.innerHTML = '';
+  // ─── OPTIONS GRID ────────────────────────────────────
+  function buildOptionsGrid(catId) {
+    const grid = document.getElementById('options-grid');
+    grid.innerHTML = '';
 
     const parts = PARTS[catId];
     if (!parts) return;
@@ -149,18 +187,18 @@ const App = (() => {
         selection[catId] = part.id;
         persistCurrent();
         render();
-        carousel.querySelectorAll('.option-item').forEach(el => el.classList.remove('active'));
+        grid.querySelectorAll('.option-item').forEach(el => el.classList.remove('active'));
         item.classList.add('active');
       });
 
-      carousel.appendChild(item);
+      grid.appendChild(item);
     }
   }
 
-  // ─── DECORATION CAROUSEL ───────────────────────────
-  function buildDecoCarousel() {
-    const carousel = document.getElementById('options-carousel');
-    carousel.innerHTML = '';
+  // ─── DECORATION GRID ─────────────────────────────────
+  function buildDecoGrid() {
+    const grid = document.getElementById('options-grid');
+    grid.innerHTML = '';
 
     for (const deco of DECORATIONS) {
       const item = document.createElement('div');
@@ -176,7 +214,7 @@ const App = (() => {
         setTimeout(() => { item.style.transform = ''; }, 120);
       });
 
-      carousel.appendChild(item);
+      grid.appendChild(item);
     }
   }
 
@@ -226,7 +264,7 @@ const App = (() => {
     if (exportWidth === 384) {
       exportWidth = 626;
       btn.classList.add('active-53mm');
-      btn.textContent = '53mm';
+      btn.textContent = '53mm \u2713';
       label.classList.remove('hidden');
       preview.classList.add('mode-53mm');
     } else {
@@ -275,7 +313,7 @@ const App = (() => {
     render();
 
     if (['body', 'head', 'eyes', 'mouth', 'hairBack', 'hairFront', 'clothes', 'hat', 'glasses'].includes(activeCategory)) {
-      buildOptionsCarousel(activeCategory);
+      buildOptionsGrid(activeCategory);
     }
 
     // Fun animation
@@ -289,7 +327,7 @@ const App = (() => {
     Storage.save(selection, Overlay.getItems());
     const btn = document.getElementById('btn-save');
     const originalText = btn.textContent;
-    btn.textContent = 'Sauvegarde !';
+    btn.textContent = 'Sauvegardé !';
     setTimeout(() => { btn.textContent = originalText; }, 1000);
   }
 
@@ -298,7 +336,7 @@ const App = (() => {
     const body = document.getElementById('modal-body');
 
     if (saves.length === 0) {
-      body.innerHTML = '<div class="empty-state">Aucun chibi sauvegarde</div>';
+      body.innerHTML = '<div class="empty-state">Aucun chibi sauvegardé</div>';
     } else {
       body.innerHTML = '';
       for (const entry of saves) {
@@ -323,7 +361,7 @@ const App = (() => {
           persistCurrent();
           render();
           if (['body', 'head', 'eyes', 'mouth', 'hairBack', 'hairFront', 'clothes', 'hat', 'glasses'].includes(activeCategory)) {
-            buildOptionsCarousel(activeCategory);
+            buildOptionsGrid(activeCategory);
           }
           hideModal();
         });

@@ -11,10 +11,24 @@
 </head>
 <body>
   <div id="app">
-    <header>
+    <!-- HEADER -->
+    <header id="app-header">
       <h1>Chibi Maker</h1>
+      <div id="header-actions">
+        <button id="btn-random" title="Aléatoire">&#x1f504;</button>
+        <div id="menu-wrapper">
+          <button id="btn-menu" title="Menu">&#x22EE;</button>
+          <div id="dropdown-menu" class="hidden">
+            <button id="btn-save">Sauvegarder</button>
+            <button id="btn-load">Charger</button>
+            <div class="menu-divider"></div>
+            <button id="btn-canvas-size">53mm</button>
+          </div>
+        </div>
+      </div>
     </header>
 
+    <!-- PREVIEW -->
     <section id="preview-area">
       <div id="chibi-preview">
         <svg id="chibi-svg" viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg"></svg>
@@ -22,37 +36,33 @@
       <div id="canvas-size-label" class="hidden">53mm</div>
     </section>
 
-    <nav id="category-bar"></nav>
-
-    <section id="options-area">
-      <div id="options-carousel"></div>
-
-      <div id="text-panel" class="hidden">
-        <input type="text" id="text-input" placeholder="Votre texte..." maxlength="30">
-        <select id="font-select">
-          <option value="sans-serif">Sans-serif</option>
-          <option value="Pacifico">Pacifico</option>
-          <option value="Permanent Marker">Permanent Marker</option>
-          <option value="Press Start 2P">Press Start 2P</option>
-          <option value="Noto Sans JP">Noto Sans JP</option>
-          <option value="Dancing Script">Dancing Script</option>
-        </select>
-        <div id="font-size-row">
-          <label for="font-size">Taille</label>
-          <input type="range" id="font-size" min="6" max="32" value="14">
-          <span id="font-size-val">14</span>
+    <!-- EDITOR PANEL -->
+    <section id="editor-panel">
+      <nav id="category-tabs"></nav>
+      <div id="options-grid-area">
+        <div id="options-grid"></div>
+        <div id="text-panel" class="hidden">
+          <input type="text" id="text-input" placeholder="Votre texte..." maxlength="30">
+          <select id="font-select">
+            <option value="sans-serif">Sans-serif</option>
+            <option value="Pacifico">Pacifico</option>
+            <option value="Permanent Marker">Permanent Marker</option>
+            <option value="Press Start 2P">Press Start 2P</option>
+            <option value="Noto Sans JP">Noto Sans JP</option>
+            <option value="Dancing Script">Dancing Script</option>
+          </select>
+          <div id="font-size-row">
+            <label for="font-size">Taille</label>
+            <input type="range" id="font-size" min="6" max="32" value="14">
+            <span id="font-size-val">14</span>
+          </div>
+          <button id="btn-add-text">Ajouter</button>
         </div>
-        <button id="btn-add-text">Ajouter</button>
       </div>
     </section>
 
-    <section id="actions-bar">
-      <button id="btn-random">Aleatoire</button>
-      <button id="btn-save">Sauvegarder</button>
-      <button id="btn-load">Charger</button>
-      <button id="btn-export">Exporter</button>
-      <button id="btn-canvas-size">53mm</button>
-    </section>
+    <!-- EXPORT -->
+    <button id="btn-export">Exporter PNG</button>
   </div>
 
   <div id="modal-overlay" class="hidden">
